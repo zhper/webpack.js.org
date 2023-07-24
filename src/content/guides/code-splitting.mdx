@@ -51,17 +51,17 @@ related:
 
 T> 本指南继续沿用 [起步](/guides/getting-started) 中的示例代码。请确保你已熟悉这些指南中提供的示例以及 [管理输出](/guides/output-management/) 章节。
 
-代码分离是 webpack 中最引人注目的特性之一。此特性能够把代码分离到不同的 bundle 中，然后可以按需加载或并行加载这些文件。代码分离可以用于获取更小的 bundle、控制资源加载优先级，如果使用合理，会极大影响加载时间。
+代码分离是 webpack 中最引人注目的特性之一。此特性能够把代码分离到不同的 bundle 中，然后可以按需加载或并行加载这些文件。代码分离可以用于获取更小的 bundle、控制资源加载优先级，如果使用合理，会极大减小加载时间。
 
 常用的代码分离方法有三种：
 
 - **入口起点**：使用 [`entry`](/configuration/entry-context) 配置手动地分离代码。
-- **防止重复**：使用 [Entry dependencies](/configuration/entry-context/#dependencies) 或者 [`SplitChunksPlugin`](/plugins/split-chunks-plugin) 去重和分离 chunk。
-- **动态导入**：通过模块的内联函数调用来分离代码。
+- **防止重复**：使用 [入口依赖](/configuration/entry-context/#dependencies) 或者 [`SplitChunksPlugin`](/plugins/split-chunks-plugin) 去重和分离 chunk。
+- **动态导入**：通过模块的内联函数调用分离代码。
 
 ## 入口起点 $#entry-points$
 
-这是迄今为止最简单直观的分离代码的方式。不过，这种方式手动配置较多，并有一些我们将会解决的隐患。先来看看如何从 main bundle 中分离另一个模块：
+这是迄今为止最简单直观的分离代码的方式。不过，这种方式手动配置较多，并有一些隐患。不过，我们将会介绍如何解决这些隐患。先来看看如何从 main bundle 中分离另一个模块：
 
 **project**
 
@@ -120,18 +120,18 @@ cacheable modules 530 KiB
 webpack 5.4.0 compiled successfully in 245 ms
 ```
 
-正如前面提到的，这种方式存在一些隐患：
+正如前面所提及，这种方式存在一些隐患：
 
-- 如果入口 chunk 之间包含一些重复的模块，那些重复模块都会被引入到各个 bundle 中。
-- 这种方法不够灵活，并且不能动态地将核心应用程序逻辑中的代码拆分出来。
+- 如果入口 chunk 之间包含一些重复的模块，那么这些重复模块都会被引入到各个 bundle 中。
+- 这种方法不够灵活，并且不能动态地拆分应用程序逻辑中的核心代码。
 
-以上两点中，第一点对我们的示例来说无疑是个问题，因为之前我们在 `./src/index.js` 中也引入过 `lodash`，这样就在两个 bundle 中造成重复引用。在下一章节会介绍如何移除重复的模块。
+以上两点中，第一点所对应的问题已经在我们上面的实例中体现出来了。除了 `./src/another-module.js`，我们也曾在 `./src/index.js` 中引入过 `lodash`，这就导致了重复引用。下一章节会介绍如何移除重复的模块。
 
 ## 防止重复 $#prevent-duplication$
 
 ### 入口依赖 $#entry-dependencies$
 
-配置 [`dependOn`](/configuration/entry-context/#dependencies) 选项，这样可以在多个 chunk 之间共享模块：
+在配置文件中配置 [`dependOn`](/configuration/entry-context/#dependencies) 选项，以在多个 chunk 之间共享模块：
 
 **webpack.config.js**
 
@@ -160,7 +160,7 @@ webpack 5.4.0 compiled successfully in 245 ms
  };
 ```
 
-如果我们要在一个 HTML 页面上使用多个入口时，还需设置 `optimization.runtimeChunk: 'single'`，否则还会遇到 [这里](https://bundlers.tooling.report/code-splitting/multi-entry/) 所述的麻烦。
+如果想要在一个 HTML 页面上使用多个入口，还需设置 `optimization.runtimeChunk: 'single'`，否则会遇到 [此处](https://bundlers.tooling.report/code-splitting/multi-entry/) 所述的麻烦。
 
 **webpack.config.js**
 
@@ -210,13 +210,13 @@ cacheable modules 530 KiB
 webpack 5.4.0 compiled successfully in 249 ms
 ```
 
-由上可知，除了生成 `shared.bundle.js`，`index.bundle.js` 和 `another.bundle.js` 之外，还生成了一个 `runtime.bundle.js` 文件。
+可以看到，除了 `shared.bundle.js`，`index.bundle.js` 和 `another.bundle.js` 之外，还生成了一个 `runtime.bundle.js` 文件。
 
-尽管可以在 webpack 中允许每个页面使用多入口，应尽可能避免使用多入口的入口：`entry: { page: ['./analytics', './app'] }`。如此，在使用 `async` 脚本标签时，会有更好的优化以及一致的执行顺序。
+尽管 webpack 允许每个页面使用多入口，但在可能的情况下，应该避免使用多入口，而使用具有多个导入的单入口：`entry: { page: ['./analytics', './app'] }`。这样可以获得更好的优化效果，并在使用异步脚本标签时保证执行顺序一致。
 
 ### SplitChunksPlugin $#splitchunksplugin$
 
-[`SplitChunksPlugin`](/plugins/split-chunks-plugin) 插件可以将公共的依赖模块提取到已有的入口 chunk 中，或者提取到一个新生成的 chunk。让我们使用这个插件，将之前的示例中重复的 `lodash` 模块去除：
+[`SplitChunksPlugin`](/plugins/split-chunks-plugin) 插件可以将公共的依赖模块提取到已有的入口 chunk 中，或者提取到一个新生成的 chunk。让我们使用这个插件去除之前示例中重复的 `lodash` 模块：
 
 **webpack.config.js**
 
@@ -241,7 +241,7 @@ webpack 5.4.0 compiled successfully in 249 ms
   };
 ```
 
-使用 [`optimization.splitChunks`](/plugins/split-chunks-plugin/#optimization-splitchunks) 配置选项之后，将会发现 `index.bundle.js` 和 `another.bundle.js` 中已经移除了重复的依赖模块。需要注意的是，插件将 `lodash` 分离到单独的 chunk，并且将其从 main bundle 中移除，减轻了 bundle 大小。执行 `npm run build` 查看效果：
+使用 [`optimization.splitChunks`](/plugins/split-chunks-plugin/#optimization-splitchunks) 配置选项后构建，将会发现 `index.bundle.js` 和 `another.bundle.js` 中已经移除了重复的依赖模块。需要注意的是，插件将 `lodash` 分离到单独的 chunk，并且将其从 main bundle 中移除，减轻了 bundle 大小。执行 `npm run build` 查看效果：
 
 ```bash
 ...
@@ -259,17 +259,17 @@ cacheable modules 530 KiB
 webpack 5.4.0 compiled successfully in 241 ms
 ```
 
-以下是由社区提供，一些对于代码分离很有帮助的 plugin 和 loader：
+以下是由社区提供，对代码分离很有帮助的 plugin 和 loader：
 
 - [`mini-css-extract-plugin`](plugins/mini-css-extract-plugin)：用于将 CSS 从主应用程序中分离。
 
 ## 动态导入 $#dynamic-imports$
 
-当涉及到动态代码拆分时，webpack 提供了两个类似的技术。第一种，也是推荐选择的方式，使用符合 [ECMAScript 提案](https://github.com/tc39/proposal-dynamic-import) 的 [`import()` 语法](/api/module-methods/#import-1) 实现动态导入。第二种则是 webpack 的遗留功能，使用 webpack 特定的 [`require.ensure`](/api/module-methods/#requireensure)。让我们先尝试使用第一种……
+webpack 提供了两个类似的技术实现动态拆分代码。第一种，也是推荐选择的方式，是使用符合 [ECMAScript 提案](https://github.com/tc39/proposal-dynamic-import) 的 [`import()` 语法](/api/module-methods/#import-1) 实现动态导入。第二种则是 webpack 的遗留功能，使用 webpack 特定的 [`require.ensure`](/api/module-methods/#requireensure)。让我们先尝试使用第一种。
 
-W> `import()` 调用会在内部使用到 [promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)。如果在旧版本浏览器中（例如，IE 11）使用 `import()`，记得使用一个 polyfill 库（例如 [es6-promise](https://github.com/stefanpenner/es6-promise) 或 [promise-polyfill](https://github.com/taylorhakes/promise-polyfill)）来 shim `Promise`。
+W> 调用 `import()` 会在内部使用 [promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)。因此如果在旧版本浏览器中（例如，IE 11）使用 `import()`，需要使用一个 polyfill 库（例如 [es6-promise](https://github.com/stefanpenner/es6-promise) 或 [promise-polyfill](https://github.com/taylorhakes/promise-polyfill)）来 shim `Promise`。
 
-在我们开始之前，先从上述示例的配置中移除掉多余的 [`entry`](/concepts/entry-points/) 和 [`optimization.splitChunks`](/plugins/split-chunks-plugin/#optimization-splitchunks)，因为接下来的演示中并不需要它们：
+在我们开始之前，先从上述示例的配置中移除多余的 [`entry`](/concepts/entry-points/) 和 [`optimization.splitChunks`](/plugins/split-chunks-plugin/#optimization-splitchunks)，因为接下来的演示中并不需要它们：
 
 **webpack.config.js**
 
@@ -341,9 +341,9 @@ webpack-demo
 +});
 ```
 
-我们之所以需要 `default`，是因为 webpack 4 在导入 CommonJS 模块时，将不再解析为 `module.exports` 的值，而是为 CommonJS 模块创建一个 artificial namespace 对象，更多有关背后原因的信息，请阅读 [webpack 4: import() and CommonJs](https://medium.com/webpack/webpack-4-import-and-commonjs-d619d626b655)。
+需要 `default` 的原因是自 webpack 4 之后，在导入 CommonJS 模块时，将不再解析为 `module.exports` 的值，而是创建一个人工命名空间对象来表示此 CommonJS 模块。更多有关背后原因的信息，请阅读 [webpack 4: import() and CommonJs](https://medium.com/webpack/webpack-4-import-and-commonjs-d619d626b655)。
 
-让我们执行 webpack，查看 `lodash` 是否会分离到一个单独的 bundle：
+试试构建最新的代码，看看 `lodash` 是否会分离到一个单独的 bundle：
 
 ```bash
 ...
@@ -405,7 +405,7 @@ Webpack v4.6.0+ 增加了对预获取（prefetch）和预加载（preload）的�
 import(/* webpackPrefetch: true */ './path/to/LoginModal.js');
 ```
 
-这会生成 `<link rel="prefetch" href="login-modal-chunk.js">` 并追加到页面头部，指示着浏览器在闲置时间预取 `login-modal-chunk.js` 文件。
+这会生成 `<link rel="prefetch" href="login-modal-chunk.js">` 并追加到页面头部，指示浏览器在闲置时间预取 `login-modal-chunk.js` 文件。
 
 T> 只要父 chunk 完成加载，webpack 就会添加预获取提示。
 
@@ -466,4 +466,4 @@ const lazyComp = () =>
 
 ## 下一步 $#next-steps$
 
-接下来，查看 [延迟加载](/guides/lazy-loading/) 来学习如何在真实的应用程序中使用 `import()` 的具体示例，以及查看 [缓存](/guides/caching/) 来学习如何有效地分离代码。
+接下来，查看 [懒加载](/guides/lazy-loading/) 来学习如何在真实的应用程序中使用 `import()` 的具体示例，以及查看 [缓存](/guides/caching/) 来学习如何有效地分离代码。
