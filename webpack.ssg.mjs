@@ -24,11 +24,6 @@ export default (env) =>
     name: 'ssg',
     mode: 'production',
     target: 'node',
-    cache: {
-      buildDependencies: {
-        config: [__filename],
-      },
-    },
     module: {
       parser: {
         javascript: {
@@ -46,7 +41,7 @@ export default (env) =>
     optimization: {
       minimizer: [
         new CssMinimizerPlugin({
-          minify: CssMinimizerPlugin.parcelCssMinify,
+          minify: CssMinimizerPlugin.lightningCssMinify,
         }),
       ],
     },

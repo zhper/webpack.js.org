@@ -15,11 +15,6 @@ import ProdAssetsManifest from './src/ProdAssetsManifest.mjs';
 export default (env) =>
   merge(common(env), {
     mode: 'production',
-    cache: {
-      buildDependencies: {
-        config: [__filename],
-      },
-    },
     entry: {
       index: {
         import: './index.jsx',
@@ -43,7 +38,7 @@ export default (env) =>
       minimizer: [
         '...',
         new CssMinimizerPlugin({
-          minify: CssMinimizerPlugin.parcelCssMinify,
+          minify: CssMinimizerPlugin.lightningCssMinify,
         }),
       ],
     },
