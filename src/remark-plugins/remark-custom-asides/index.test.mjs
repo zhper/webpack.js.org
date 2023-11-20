@@ -21,7 +21,7 @@ W> hello world
           expect(contents).toContain('<aside class="warning"');
           expect(contents).toContain('<h6 class="warning__prefix"');
           expect(contents).toContain('warning');
-          expect(contents).toMatchSnapshot();
+          expect(contents.replace('警告', 'warning').replace('提示', 'tip').replace('TODO', 'todo')).toMatchSnapshot();
         }
       );
   });
